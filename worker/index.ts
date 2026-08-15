@@ -1,12 +1,22 @@
 export default {
-  fetch(request) {
+  async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
 
-    if (url.pathname.startsWith("/api/")) {
+    if (url.pathname === "/api/health") {
       return Response.json({
-        name: "Cloudflare",
+        status: "ok",
+        service: "joli-checker",
+        timestamp: new Date().toISOString(),
       });
     }
-		return new Response(null, { status: 404 });
+
+    return Response.json(
+      {
+        error: "Not Found",
+      },
+      {
+        status: 404,
+      },
+    );
   },
-} satisfies ExportedHandler<Env>;
+} satisfies ExportedHandler;
