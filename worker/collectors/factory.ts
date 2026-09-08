@@ -1,4 +1,10 @@
-import { GreenhouseCollector } from "./greenhouse.js";
+import {
+  GreenhouseCollector,
+} from "./greenhouse.js";
+
+import {
+  LeverCollector,
+} from "./lever.js";
 
 import type {
   JobCollector,
@@ -15,14 +21,21 @@ export type CollectorConfiguration = {
 export function createCollector(
   configuration: CollectorConfiguration,
 ): JobCollector {
-  switch (configuration.collectorType) {
+  switch (
+    configuration.collectorType
+  ) {
     case "GREENHOUSE": {
-      if (!configuration.sourceKey) {
+      if (
+        !configuration.sourceKey
+      ) {
         throw new Error(
-          `Company ${configuration.companyId} ` +
-            `is missing a Greenhouse source key`,
+          `Company ` +
+            `${configuration.companyId} ` +
+            `is missing a ` +
+            `Greenhouse source key`,
         );
       }
+
 
       return new GreenhouseCollector(
         configuration.companyId,
@@ -30,11 +43,33 @@ export function createCollector(
       );
     }
 
+
+    case "LEVER": {
+      if (
+        !configuration.sourceKey
+      ) {
+        throw new Error(
+          `Company ` +
+            `${configuration.companyId} ` +
+            `is missing a ` +
+            `Lever source key`,
+        );
+      }
+
+
+      return new LeverCollector(
+        configuration.companyId,
+        configuration.sourceKey,
+      );
+    }
+
+
     default:
       throw new Error(
         `Unsupported collector type ` +
           `"${configuration.collectorType}" ` +
-          `for company ${configuration.companyId}`,
+          `for company ` +
+          `${configuration.companyId}`,
       );
   }
 }
