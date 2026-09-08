@@ -1,3 +1,5 @@
+import { GreenhouseCollector } from "./collectors/greenhouse.js";
+
 type CompanyRow = {
   id: string;
   name: string;
@@ -35,6 +37,25 @@ export default {
 
       return Response.json({
         companies: result.results,
+      });
+    }
+
+    if (
+      request.method === "GET" &&
+      url.pathname === "/api/debug/stripe-jobs"
+    ) {
+      const collector = new GreenhouseCollector(
+        "stripe",
+        "stripe",
+      );
+
+      const result = await collector.collect();
+
+      return Response.json({
+        fetchedAt: result.fetchedAt,
+        totalJobs: result.jobs.length,
+        warnings: result.warnings,
+        sample: result.jobs.slice(0, 5),
       });
     }
 

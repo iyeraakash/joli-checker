@@ -19,8 +19,6 @@ type GreenhouseJob = {
 
   absolute_url: string;
 
-  content?: string | null;
-
   updated_at?: string;
 };
 
@@ -47,8 +45,8 @@ export class GreenhouseCollector implements JobCollector {
     const fetchedAt = new Date().toISOString();
 
     const url =
-      `https://boards-api.greenhouse.io/v1/boards/` +
-      `${encodeURIComponent(this.boardToken)}/jobs?content=true`;
+                `https://boards-api.greenhouse.io/v1/boards/` +
+                `${encodeURIComponent(this.boardToken)}/jobs`;
 
     const response = await fetch(url, {
       headers: {
@@ -79,7 +77,7 @@ export class GreenhouseCollector implements JobCollector {
         externalJobId: String(job.id),
         title: job.title,
         location: job.location?.name?.trim() || null,
-        description: job.content ?? null,
+        description: null,
         jobUrl: job.absolute_url,
         employerPostedAt: null,
         postedPrecision: "UNKNOWN",
