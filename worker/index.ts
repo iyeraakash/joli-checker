@@ -1,7 +1,16 @@
 import { GreenhouseCollector } from "./collectors/greenhouse.js";
-import { runCompanyScan } from "./scanning/run-company-scan.js";
 
-import { StaticCollector } from "./testing/static-collector.js";
+import {
+  runConfiguredCompanyScan,
+} from "./scanning/run-configured-company-scan.js";
+
+import {
+  runCompanyScan,
+} from "./scanning/run-company-scan.js";
+
+import {
+  StaticCollector,
+} from "./testing/static-collector.js";
 
 import {
   getFreshnessScenario,
@@ -15,6 +24,7 @@ type CompanyRow = {
   careersUrl: string;
   collectorType: string;
   priorityTier: string;
+  sourceKey: string | null;
 };
 
 
@@ -36,7 +46,10 @@ export default {
     ) {
       return Response.json({
         status: "ok",
-        service: "joli-checker",
+
+        service:
+          "joli-checker",
+
         timestamp:
           new Date().toISOString(),
       });
@@ -64,7 +77,10 @@ export default {
               AS collectorType,
 
             priority_tier
-              AS priorityTier
+              AS priorityTier,
+
+            source_key
+              AS sourceKey
 
           FROM companies
 
@@ -82,9 +98,12 @@ export default {
 
 
     /*
-     * DEBUG:
-     * Fetch Stripe jobs from Greenhouse
-     * but do NOT persist them.
+     * TEMPORARY DEBUG:
+     *
+     * Fetch Stripe directly from
+     * Greenhouse without persisting it.
+     *
+     * We'll eventually remove this route.
      */
     if (
       request.method === "GET" &&
@@ -122,42 +141,77 @@ export default {
 
 
     /*
-     * DEBUG:
-     * Run a real Stripe scan
-     * and persist results into local D1
-     * during local development.
+     * GENERIC CONFIGURED COMPANY SCAN
+     *
+     * Examples:
+     *
+     * POST /api/debug/company-scan/stripe
+     * POST /api/debug/company-scan/amazon
      */
+    const companyScanPrefix =
+      "/api/debug/company-scan/";
+
+
     if (
       request.method === "POST" &&
-      url.pathname ===
-        "/api/debug/stripe-scan"
+      url.pathname.startsWith(
+        companyScanPrefix,
+      )
     ) {
-      const collector =
-        new GreenhouseCollector(
-          "stripe",
-          "stripe",
+      const companyId =
+        decodeURIComponent(
+          url.pathname.slice(
+            companyScanPrefix.length,
+          ),
+        ).trim();
+
+
+      if (!companyId) {
+        return Response.json(
+          {
+            error:
+              "Company ID is required",
+          },
+          {
+            status: 400,
+          },
         );
+      }
 
 
-      const result =
-        await runCompanyScan(
-          env.DB,
-          "stripe",
-          collector,
+      try {
+        const result =
+          await runConfiguredCompanyScan(
+            env.DB,
+            companyId,
+          );
+
+
+        return Response.json(
+          result,
         );
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : String(error);
 
 
-      return Response.json(
-        result,
-      );
+        return Response.json(
+          {
+            error:
+              message,
+          },
+          {
+            status: 400,
+          },
+        );
+      }
     }
 
 
     /*
-     * DEBUG:
-     * Controlled freshness lifecycle test.
-     *
-     * Examples:
+     * CONTROLLED FRESHNESS TEST
      *
      * POST /api/debug/freshness-scan/1
      * POST /api/debug/freshness-scan/2
@@ -207,11 +261,12 @@ export default {
 
 
     /*
-     * FALLBACK 404
+     * FALLBACK
      */
     return Response.json(
       {
-        error: "Not Found",
+        error:
+          "Not Found",
       },
       {
         status: 404,
