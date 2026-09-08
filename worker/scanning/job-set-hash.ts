@@ -12,6 +12,7 @@ export async function createJobSetHash(
         job.jobUrl,
         job.employerPostedAt ?? "",
         job.postedPrecision,
+        job.freshnessConfidence,
       ].join("|"),
     )
     .sort();

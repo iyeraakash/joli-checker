@@ -1,4 +1,5 @@
 import { GreenhouseCollector } from "./collectors/greenhouse.js";
+import { runCompanyScan } from "./scanning/run-company-scan.js";
 
 type CompanyRow = {
   id: string;
@@ -13,7 +14,10 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
-    if (request.method === "GET" && url.pathname === "/api/health") {
+    if (
+      request.method === "GET" &&
+      url.pathname === "/api/health"
+    ) {
       return Response.json({
         status: "ok",
         service: "joli-checker",
@@ -21,7 +25,10 @@ export default {
       });
     }
 
-    if (request.method === "GET" && url.pathname === "/api/companies") {
+    if (
+      request.method === "GET" &&
+      url.pathname === "/api/companies"
+    ) {
       const result = await env.DB.prepare(`
         SELECT
           id,
@@ -57,6 +64,24 @@ export default {
         warnings: result.warnings,
         sample: result.jobs.slice(0, 5),
       });
+    }
+
+    if (
+      request.method === "POST" &&
+      url.pathname === "/api/debug/stripe-scan"
+    ) {
+      const collector = new GreenhouseCollector(
+        "stripe",
+        "stripe",
+      );
+
+      const result = await runCompanyScan(
+        env.DB,
+        "stripe",
+        collector,
+      );
+
+      return Response.json(result);
     }
 
     return Response.json(
